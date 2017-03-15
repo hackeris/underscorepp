@@ -1,0 +1,8 @@
+//
+// Created by hackeris on 2017/3/15.
+//
+
+#ifndef UNDERSCOREPP_UNDERSCORE_HPP
+#define UNDERSCOREPP_UNDERSCORE_HPP
+
+#endif //UNDERSCOREPP_UNDERSCORE_HPP
