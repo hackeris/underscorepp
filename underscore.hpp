@@ -110,9 +110,22 @@ namespace _ {
         template<typename ResultContainer, typename Container, typename Function>
         ResultContainer map(const Container &container, Function function) {
             ResultContainer result(container.size());
-            auto size = container.size();
             _peach(container, [&result, &function, &container](int tid, int idx) {
                 result[idx] = function(container[idx]);
+            });
+            return result;
+        };
+
+        template<typename Container, typename Function>
+        Container filter(const Container &container, Function function) {
+            Container result;
+            std::mutex _mutex;
+            _peach(container, [&result, &_mutex, &container, &function](int tid, int idx) {
+                if (function(container[idx])) {
+                    _mutex.lock();
+                    result.push_back(container[idx]);
+                    _mutex.unlock();
+                }
             });
             return result;
         };

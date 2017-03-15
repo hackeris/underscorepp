@@ -155,6 +155,10 @@ namespace test {
             std::cout << "OK..." << std::endl;
         }
 
+        void test_filter() {
+
+        }
+
         void test_parallel_underscore() {
             test_each();
             test_map();
