@@ -59,6 +59,15 @@ void test_group() {
         return item % 3;
     });
 
+    using item_type = decltype(result)::value_type;
+    _::each(result, [](const item_type &item) {
+        std::cout << item.first << ": ";
+        _::each(item.second, [](const int &elem) {
+            std::cout << elem << " ";
+        });
+        std::cout << std::endl;
+    });
+
     std::cout << "OK." << std::endl;
 }
 
