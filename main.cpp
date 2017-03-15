@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <cassert>
 #include "underscore.hpp"
 
 namespace test {
@@ -116,16 +117,22 @@ namespace test {
     namespace parallel {
 
         void test_each() {
+
+            std::cout << "Testing parallel each..." << std::endl;
+
+            int n = 100000;
             std::vector<int> a;
-            for (int i = 0; i < 10000; i++) {
+            for (int i = 1; i <= n; i++) {
                 a.push_back(i);
             }
+            std::atomic<int> sum{0};
 
-            _::parallel::each(a, [](const int &item) {
-                int i = 0;
-                while (i < 10000)i++;
-                std::cout << item << " ";
+            _::parallel::each(a, [&sum](const int &item) {
+                sum.fetch_add(item);
             });
+            assert(sum == n * (n + 1) / 2);
+
+            std::cout << "OK..." << std::endl;
         }
 
         void test_parallel_underscore() {

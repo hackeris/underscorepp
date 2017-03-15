@@ -6,6 +6,7 @@
 #define UNDERSCOREPP_UNDERSCORE_HPP
 
 #include <map>
+#include <thread>
 
 namespace _ {
 
@@ -72,17 +73,45 @@ namespace _ {
         return result;
     };
 
+}
+
+namespace _ {
+
     namespace parallel {
+
+        static const int THREADS = 4;
 
         template<typename Container, typename Function>
         void each(const Container &container, Function function) {
             size_t size = container.size();
-        #pragma omp parallel for
-            for (size_t i = 0; i < size; i++) {
-                function(container[i]);
+            std::thread **threads = new thread *[THREADS];
+            for (int i = 0; i < THREADS; i++) {
+                threads[i] = new thread([&function, &container, size, i]() {
+                    auto start = i * size / THREADS;
+                    auto end = std::min((i + 1) * size / THREADS, size);
+                    for (auto j = start; j < end; j++) {
+                        function(container[j]);
+                    }
+                });
             }
+            for (int i = 0; i < THREADS; i++) {
+                threads[i]->join();
+            }
+            delete[] threads;
+        };
+
+        template<typename ResultContainer, typename Container, typename Function>
+        ResultContainer map(const Container &container, Function function) {
+            ResultContainer result(container.size());
+            auto size = container.size();
+
+            for (const auto &item : container) {
+                result.push_back(function(item));
+            }
+            return result;
         };
     }
+
 }
 
 
