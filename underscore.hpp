@@ -5,12 +5,18 @@
 #ifndef UNDERSCOREPP_UNDERSCORE_HPP
 #define UNDERSCOREPP_UNDERSCORE_HPP
 
-#include <vector>
 #include <map>
 
 namespace _ {
 
     using namespace std;
+
+    template<typename Container, typename Function>
+    void each(const Container &container, Function function) {
+        for (const auto &item: container) {
+            function(item);
+        }
+    };
 
     template<typename ResultContainer, typename Container, typename Function>
     ResultContainer map(const Container &container, Function function) {
@@ -32,13 +38,6 @@ namespace _ {
         return result;
     };
 
-    template<typename Container, typename Function>
-    void each(const Container &container, Function function) {
-        for (const auto &item: container) {
-            function(item);
-        }
-    };
-
     template<typename GroupKey, typename Container, typename Function>
     std::map<GroupKey, Container> group(const Container &container, Function function) {
         std::map<GroupKey, Container> result;
@@ -55,6 +54,35 @@ namespace _ {
         return result;
     };
 
+    template<typename ResultType, typename Container, typename Function>
+    ResultType reduce(const Container &container, Function function, ResultType init) {
+        ResultType result = init;
+        each(container, [&result, &function](const typename Container::value_type &item) {
+            result = function(result, item);
+        });
+        return result;
+    };
+
+    template<typename ResultType, typename Container, typename Function>
+    ResultType reduceRight(const Container &container, Function function, ResultType init) {
+        ResultType result = init;
+        each(container, [&result, &function](const typename Container::value_type &item) {
+            result = function(item, result);
+        });
+        return result;
+    };
+
+    namespace parallel {
+
+        template<typename Container, typename Function>
+        void each(const Container &container, Function function) {
+            size_t size = container.size();
+        #pragma omp parallel for
+            for (size_t i = 0; i < size; i++) {
+                function(container[i]);
+            }
+        };
+    }
 }
 
 
