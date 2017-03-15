@@ -81,8 +81,8 @@ namespace _ {
 
         static const int THREADS = 4;
 
-        template<typename Container, typename Function>
-        void each(const Container &container, Function function) {
+        template<typename Container>
+        void _peach(const Container &container, std::function<void(int tid, int idx)> function) {
             size_t size = container.size();
             std::thread **threads = new thread *[THREADS];
             for (int i = 0; i < THREADS; i++) {
@@ -90,7 +90,7 @@ namespace _ {
                     auto start = i * size / THREADS;
                     auto end = std::min((i + 1) * size / THREADS, size);
                     for (auto j = start; j < end; j++) {
-                        function(container[j]);
+                        function(i, j);
                     }
                 });
             }
@@ -100,14 +100,20 @@ namespace _ {
             delete[] threads;
         };
 
+        template<typename Container, typename Function>
+        void each(const Container &container, Function function) {
+            _peach<Container>(container, [&container, &function](int i, int j) {
+                function(container[j]);
+            });
+        };
+
         template<typename ResultContainer, typename Container, typename Function>
         ResultContainer map(const Container &container, Function function) {
             ResultContainer result(container.size());
             auto size = container.size();
-
-            for (const auto &item : container) {
-                result.push_back(function(item));
-            }
+            _peach(container, [&result, &function, &container](int tid, int idx) {
+                result[idx] = function(container[idx]);
+            });
             return result;
         };
     }

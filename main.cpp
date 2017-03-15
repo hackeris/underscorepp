@@ -135,8 +135,29 @@ namespace test {
             std::cout << "OK..." << std::endl;
         }
 
+        void test_map() {
+            std::cout << "Testing parallel map..." << std::endl;
+
+            int n = 100000;
+            std::vector<int> a;
+            for (int i = 1; i <= n; i++) {
+                a.push_back(i);
+            }
+
+            using result_type = std::vector<int>;
+            auto a2 = _::parallel::map<result_type>(a, [](const int &item) -> int {
+                return item * 2;
+            });
+            for (size_t i = 0; i < a2.size(); i++) {
+                assert(a2[i] == a[i] * 2);
+            }
+
+            std::cout << "OK..." << std::endl;
+        }
+
         void test_parallel_underscore() {
             test_each();
+            test_map();
         }
 
     }
