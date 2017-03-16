@@ -88,16 +88,16 @@ namespace test {
         std::cout << "OK." << std::endl;
     }
 
-    void test_reduce_right() {
+    void test_find_first() {
 
-        std::cout << "Testing reduce right..." << std::endl;
+        std::cout << "Testing find first..." << std::endl;
 
         std::vector<int> a{1, 2, 3, 4, 5, 6, 7, 8};
-        auto result = _::reduceRight<int>(a, [](const int &item, const int &memo) -> int {
-            return memo + item;
-        }, 0);
+        auto result = _::findFirst(a, [](const int &item) {
+            return item == 5;
+        });
 
-        std::cout << result << std::endl;
+        std::cout << *result << std::endl;
 
         std::cout << "OK." << std::endl;
     }
@@ -109,7 +109,7 @@ namespace test {
         test_filter();
         test_group();
         test_reduce();
-        test_reduce_right();
+        test_find_first();
     }
 }
 
@@ -156,12 +156,30 @@ namespace test {
         }
 
         void test_filter() {
+            std::cout << "Testing parallel filter..." << std::endl;
 
+            int n = 100000;
+            std::vector<int> a;
+            for (int i = 1; i <= n; i++) {
+                a.push_back(i);
+            }
+
+            using result_type = std::vector<int>;
+            auto a2 = _::parallel::filter(a, [](const int &item) -> bool {
+                return item % 1000 == 0;
+            });
+            for (size_t i = 0; i < a2.size(); i++) {
+                assert(a2[i] % 1000 == 0);
+            }
+            assert(a2.size() == n / 1000);
+
+            std::cout << "OK..." << std::endl;
         }
 
         void test_parallel_underscore() {
             test_each();
             test_map();
+            test_filter();
         }
 
     }

@@ -64,15 +64,17 @@ namespace _ {
         return result;
     };
 
-    template<typename ResultType, typename Container, typename Function>
-    ResultType reduceRight(const Container &container, Function function, ResultType init) {
-        ResultType result = init;
-        each(container, [&result, &function](const typename Container::value_type &item) {
-            result = function(item, result);
-        });
-        return result;
+    template<typename Container, typename Function>
+    typename Container::iterator findFirst(Container &container, Function function) {
+        for (auto itr = container.begin();
+             itr != container.end();
+             itr++) {
+            if (function(*itr)) {
+                return itr;
+            }
+        }
+        return container.end();
     };
-
 }
 
 namespace _ {
