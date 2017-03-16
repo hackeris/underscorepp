@@ -1,8 +1,8 @@
 # underscorepp
 
-underscore.js like library for C++.
+[underscore.js ](http://underscorejs.org/) like library for C++.
 
-## features
+## Features
 
 * each
 * map
@@ -12,7 +12,7 @@ underscore.js like library for C++.
 * findFirst
 * flatten
 
-###paralleled
+### Paralleled
 
 * each
 * map
@@ -20,7 +20,7 @@ underscore.js like library for C++.
 * group
 * flatten
 
-## example
+## Example
 
 ```c++
 
