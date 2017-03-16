@@ -75,6 +75,17 @@ namespace _ {
         }
         return container.end();
     };
+
+    template<typename ContainerOfContainer>
+    typename ContainerOfContainer::value_type flatten(ContainerOfContainer &containerOfContainer) {
+        typename ContainerOfContainer::value_type result;
+        for (const auto &container: containerOfContainer) {
+            for (const auto &item: container) {
+                result.push_back(item);
+            }
+        }
+        return result;
+    }
 }
 
 namespace _ {
@@ -131,6 +142,31 @@ namespace _ {
             });
             return result;
         };
+
+        template<typename ContainerOfContainer>
+        typename ContainerOfContainer::value_type flatten(ContainerOfContainer &containerOfContainer) {
+            typedef std::tuple<size_t, size_t, size_t> range_type;
+            size_t total_size = 0;
+            std::vector<range_type> ranges(containerOfContainer.size());
+            for (size_t i = 0;
+                 i < containerOfContainer.size();
+                 i++) {
+                ranges[i] = make_tuple(i, total_size, total_size + containerOfContainer[i].size());
+                total_size += containerOfContainer[i].size();
+            }
+
+            typename ContainerOfContainer::value_type result(total_size);
+            _peach(ranges, [&containerOfContainer, &ranges, &result](int tid, int idx) {
+                range_type range = ranges[idx];
+                size_t cid = std::get<0>(range);
+                size_t start = std::get<1>(range);
+                size_t end = std::get<2>(range);
+                for (size_t i = start; i < end; i++) {
+                    result[i] = (containerOfContainer[cid][i - start]);
+                }
+            });
+            return result;
+        }
     }
 
 }

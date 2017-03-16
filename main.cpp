@@ -102,6 +102,25 @@ namespace test {
         std::cout << "OK." << std::endl;
     }
 
+    void test_flatten() {
+
+        std::cout << "Testing flatten..." << std::endl;
+
+        std::vector<std::vector<int>> a{
+                {1, 2, 3, 4, 5, 6, 7, 8},
+                {1, 2, 3, 4, 5, 6, 7, 8},
+                {1, 2, 3, 4, 5, 6, 7, 8}
+        };
+        auto result = _::flatten(a);
+
+        for (const auto &item:result) {
+            std::cout << item << " ";
+        }
+        std::cout << std::endl;
+
+        std::cout << "OK." << std::endl;
+    }
+
     void test_underscore() {
 
         test_each();
@@ -110,6 +129,7 @@ namespace test {
         test_group();
         test_reduce();
         test_find_first();
+        test_flatten();
     }
 }
 
@@ -176,10 +196,30 @@ namespace test {
             std::cout << "OK..." << std::endl;
         }
 
+        void test_flatten() {
+            std::cout << "Testing parallel flatten..." << std::endl;
+
+            std::vector<std::vector<int>> a{
+                    {1, 2, 3, 4, 5, 6, 7, 8},
+                    {1, 2, 3, 4, 5, 6, 7, 8},
+                    {1, 2, 3, 4, 5, 6, 7, 8},
+                    {1, 2, 3, 4, 5, 6, 7}
+            };
+            auto result = _::parallel::flatten(a);
+
+            for (const auto &item:result) {
+                std::cout << item << " ";
+            }
+            std::cout << std::endl;
+
+            std::cout << "OK." << std::endl;
+        }
+
         void test_parallel_underscore() {
             test_each();
             test_map();
             test_filter();
+            test_flatten();
         }
 
     }
