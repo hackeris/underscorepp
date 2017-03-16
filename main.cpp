@@ -196,6 +196,31 @@ namespace test {
             std::cout << "OK..." << std::endl;
         }
 
+        void test_group() {
+
+            std::cout << "Testing parallel group..." << std::endl;
+
+            int n = 100000;
+            std::vector<int> a;
+            for (int i = 1; i <= n; i++) {
+                a.push_back(i);
+            }
+
+            auto result = _::group<int>(a, [](const int &item) -> int {
+                return item % 10;
+            });
+
+            using item_type = decltype(result)::value_type;
+            _::each(result, [&n](const item_type &item) {
+                int count = _::reduce(item.second, [](int memo, int ele) -> int {
+                    return memo + 1;
+                }, 0);
+                assert(count == n / 10);
+            });
+
+            std::cout << "OK." << std::endl;
+        }
+
         void test_flatten() {
             std::cout << "Testing parallel flatten..." << std::endl;
 
@@ -219,6 +244,7 @@ namespace test {
             test_each();
             test_map();
             test_filter();
+            test_group();
             test_flatten();
         }
 

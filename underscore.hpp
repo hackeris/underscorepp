@@ -95,7 +95,7 @@ namespace _ {
         static const int THREADS = 4;
 
         template<typename Container>
-        void _peach(const Container &container, std::function<void(int tid, int idx)> function) {
+        void _peach(const Container &container, std::function<void(size_t tid, size_t idx)> function) {
             size_t size = container.size();
             std::thread **threads = new thread *[THREADS];
             for (int i = 0; i < THREADS; i++) {
@@ -115,7 +115,7 @@ namespace _ {
 
         template<typename Container, typename Function>
         void each(const Container &container, Function function) {
-            _peach<Container>(container, [&container, &function](int i, int j) {
+            _peach<Container>(container, [&container, &function](size_t i, size_t j) {
                 function(container[j]);
             });
         };
@@ -123,7 +123,7 @@ namespace _ {
         template<typename ResultContainer, typename Container, typename Function>
         ResultContainer map(const Container &container, Function function) {
             ResultContainer result(container.size());
-            _peach(container, [&result, &function, &container](int tid, int idx) {
+            _peach(container, [&result, &function, &container](size_t tid, size_t idx) {
                 result[idx] = function(container[idx]);
             });
             return result;
@@ -133,7 +133,7 @@ namespace _ {
         Container filter(const Container &container, Function function) {
             Container result;
             std::mutex _mutex;
-            _peach(container, [&result, &_mutex, &container, &function](int tid, int idx) {
+            _peach(container, [&result, &_mutex, &container, &function](size_t tid, size_t idx) {
                 if (function(container[idx])) {
                     _mutex.lock();
                     result.push_back(container[idx]);
@@ -143,20 +143,53 @@ namespace _ {
             return result;
         };
 
+        template<typename GroupKey, typename Container, typename Function>
+        std::map<GroupKey, Container> group(const Container &container, Function function) {
+
+            std::map<GroupKey, Container> temp[THREADS];
+            _peach(container, [&container, &temp, &function](size_t tid, size_t idx) {
+                const auto &item = container[idx];
+                const auto &ttemp = temp[tid];
+                GroupKey key = function(item);
+                if (ttemp.find(key) == ttemp.end()) {
+                    Container tmpC;
+                    tmpC.push_back(item);
+                    ttemp[key] = tmpC;
+                } else {
+                    ttemp[key].push_back(item);
+                }
+            });
+
+            std::map<GroupKey, Container> result;
+            each(temp, [&result](const std::map<GroupKey, Container> &item) {
+                for (const auto &pair: item) {
+                    if (result.find(pair.first) == result.end()) {
+                        Container tmpC;
+                        tmpC.push_back(pair.second);
+                        result[pair.first] = tmpC;
+                    } else {
+                        result[pair.first].push_back(item);
+                    }
+                }
+            });
+            return result;
+        };
+
         template<typename ContainerOfContainer>
         typename ContainerOfContainer::value_type flatten(ContainerOfContainer &containerOfContainer) {
+
+            //  get ranges of each container in result
             typedef std::tuple<size_t, size_t, size_t> range_type;
             size_t total_size = 0;
             std::vector<range_type> ranges(containerOfContainer.size());
-            for (size_t i = 0;
-                 i < containerOfContainer.size();
-                 i++) {
+            for (size_t i = 0; i < containerOfContainer.size(); i++) {
                 ranges[i] = make_tuple(i, total_size, total_size + containerOfContainer[i].size());
                 total_size += containerOfContainer[i].size();
             }
 
+            //  perform parallel flatten
             typename ContainerOfContainer::value_type result(total_size);
-            _peach(ranges, [&containerOfContainer, &ranges, &result](int tid, int idx) {
+            _peach(ranges, [&containerOfContainer, &ranges, &result](size_t tid, size_t idx) {
                 range_type range = ranges[idx];
                 size_t cid = std::get<0>(range);
                 size_t start = std::get<1>(range);
