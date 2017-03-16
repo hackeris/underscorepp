@@ -146,10 +146,10 @@ namespace _ {
         template<typename GroupKey, typename Container, typename Function>
         std::map<GroupKey, Container> group(const Container &container, Function function) {
 
-            std::map<GroupKey, Container> temp[THREADS];
+            std::vector<std::map<GroupKey, Container>> temp(THREADS);
             _peach(container, [&container, &temp, &function](size_t tid, size_t idx) {
                 const auto &item = container[idx];
-                const auto &ttemp = temp[tid];
+                auto &ttemp = temp[tid];
                 GroupKey key = function(item);
                 if (ttemp.find(key) == ttemp.end()) {
                     Container tmpC;
@@ -161,14 +161,14 @@ namespace _ {
             });
 
             std::map<GroupKey, Container> result;
-            each(temp, [&result](const std::map<GroupKey, Container> &item) {
+            _::each(temp, [&result](const std::map<GroupKey, Container> &item) {
                 for (const auto &pair: item) {
                     if (result.find(pair.first) == result.end()) {
-                        Container tmpC;
-                        tmpC.push_back(pair.second);
-                        result[pair.first] = tmpC;
-                    } else {
-                        result[pair.first].push_back(item);
+                        result[pair.first] = Container();
+                    }
+                    Container &tmpC = result[pair.first];
+                    for (const auto &ele: pair.second) {
+                        tmpC.push_back(ele);
                     }
                 }
             });

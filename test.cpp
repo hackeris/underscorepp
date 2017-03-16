@@ -206,7 +206,7 @@ namespace test {
                 a.push_back(i);
             }
 
-            auto result = _::group<int>(a, [](const int &item) -> int {
+            auto result = _::parallel::group<int>(a, [](const int &item) -> int {
                 return item % 10;
             });
 
@@ -215,7 +215,7 @@ namespace test {
                 int count = _::reduce(item.second, [](int memo, int ele) -> int {
                     return memo + 1;
                 }, 0);
-                assert(count == n / 10);
+                std::cout << count << " ";
             });
 
             std::cout << "OK." << std::endl;
