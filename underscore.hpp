@@ -149,6 +149,7 @@ namespace _ {
 
             using result_type =std::map<GroupKey, Container>;
 
+            //  parallel group data to many temp maps.
             std::vector<result_type> temp(THREADS);
             _peach(container, [&container, &temp, &function](size_t tid, size_t idx) {
                 const auto &item = container[idx];
@@ -163,6 +164,7 @@ namespace _ {
                 }
             });
 
+            //  get all the grouped keys, put them into a vector
             std::set<GroupKey> tempKeys;
             _::each(temp, [&tempKeys](const result_type &item) {
                 for (const auto &pair: item) {
@@ -177,6 +179,7 @@ namespace _ {
                         return key;
                     });
 
+            //  parallel reduce temp maps into single. paralleled by keys
             each(keys, [&result, &temp](const GroupKey &key) {
                 _::each(temp, [&key, &result](const result_type &itemp) {
                     auto &keySet = result[key];
