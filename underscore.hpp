@@ -6,6 +6,7 @@
 #define UNDERSCOREPP_UNDERSCORE_HPP
 
 #include <map>
+#include <set>
 #include <thread>
 
 namespace _ {
@@ -146,7 +147,9 @@ namespace _ {
         template<typename GroupKey, typename Container, typename Function>
         std::map<GroupKey, Container> group(const Container &container, Function function) {
 
-            std::vector<std::map<GroupKey, Container>> temp(THREADS);
+            using result_type =std::map<GroupKey, Container>;
+
+            std::vector<result_type> temp(THREADS);
             _peach(container, [&container, &temp, &function](size_t tid, size_t idx) {
                 const auto &item = container[idx];
                 auto &ttemp = temp[tid];
@@ -160,17 +163,30 @@ namespace _ {
                 }
             });
 
-            std::map<GroupKey, Container> result;
-            _::each(temp, [&result](const std::map<GroupKey, Container> &item) {
+            std::set<GroupKey> tempKeys;
+            _::each(temp, [&tempKeys](const result_type &item) {
                 for (const auto &pair: item) {
-                    if (result.find(pair.first) == result.end()) {
-                        result[pair.first] = Container();
-                    }
-                    Container &tmpC = result[pair.first];
-                    for (const auto &ele: pair.second) {
-                        tmpC.push_back(ele);
-                    }
+                    tempKeys.insert(pair.first);
                 }
+            });
+            using KeysType = std::vector<GroupKey>;
+            result_type result;
+            auto keys = _::map < KeysType > (tempKeys,
+                    [&result](const GroupKey &key) -> GroupKey {
+                        result[key] = Container();
+                        return key;
+                    });
+
+            each(keys, [&result, &temp](const GroupKey &key) {
+                _::each(temp, [&key, &result](const result_type &itemp) {
+                    auto &keySet = result[key];
+                    if (itemp.find(key) != itemp.end()) {
+                        auto &tset = const_cast<result_type &>(itemp)[key];
+                        for (const auto &item: tset) {
+                            keySet.push_back(item);
+                        }
+                    }
+                });
             });
             return result;
         };
