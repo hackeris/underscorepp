@@ -154,6 +154,43 @@ namespace _ {
             return result;
         };
 
+        template<typename KeyType, typename ValueType>
+        std::map<KeyType, std::vector<ValueType>>
+        merge(const std::vector<std::map<KeyType, std::vector<ValueType>>> &temp) {
+
+            using ValueContainer = std::vector<ValueType>;
+            using ResultType =std::map<KeyType, ValueContainer>;
+            using KeysType = std::vector<KeyType>;
+
+            //  get all the grouped keys, put them into a vector
+            std::set<KeyType> tempKeys;
+            _::each(temp, [&tempKeys](const ResultType &item) {
+                for (const auto &pair : item) {
+                    tempKeys.insert(pair.first);
+                }
+            });
+            ResultType result;
+            auto keys = _::map < KeysType > (tempKeys,
+                    [&result](const KeyType &key) -> KeyType {
+                        result[key] = ValueContainer();
+                        return key;
+                    });
+
+            //  parallel reduce temp maps into single. paralleled by keys
+            each(keys, [&result, &temp](const KeyType &key) {
+                _::each(temp, [&key, &result](const ResultType &itemp) {
+                    auto &keySet = result[key];
+                    if (itemp.find(key) != itemp.end()) {
+                        auto &tset = const_cast<ResultType &>(itemp)[key];
+                        for (const auto &item : tset) {
+                            keySet.push_back(item);
+                        }
+                    }
+                });
+            });
+            return std::move(result);
+        };
+
         template<typename GroupKey, typename Container, typename Function>
         std::map<GroupKey, Container> group(const Container &container, Function function) {
 
@@ -174,34 +211,7 @@ namespace _ {
                 }
             });
 
-            //  get all the grouped keys, put them into a vector
-            std::set<GroupKey> tempKeys;
-            _::each(temp, [&tempKeys](const result_type &item) {
-                for (const auto &pair : item) {
-                    tempKeys.insert(pair.first);
-                }
-            });
-            using KeysType = std::vector<GroupKey>;
-            result_type result;
-            auto keys = _::map < KeysType > (tempKeys,
-                    [&result](const GroupKey &key) -> GroupKey {
-                        result[key] = Container();
-                        return key;
-                    });
-
-            //  parallel reduce temp maps into single. paralleled by keys
-            each(keys, [&result, &temp](const GroupKey &key) {
-                _::each(temp, [&key, &result](const result_type &itemp) {
-                    auto &keySet = result[key];
-                    if (itemp.find(key) != itemp.end()) {
-                        auto &tset = const_cast<result_type &>(itemp)[key];
-                        for (const auto &item : tset) {
-                            keySet.push_back(item);
-                        }
-                    }
-                });
-            });
-            return result;
+            return merge(temp);
         };
 
         template<typename ContainerOfContainer>
