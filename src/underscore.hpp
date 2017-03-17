@@ -9,13 +9,20 @@
 #include <set>
 #include <thread>
 
+#undef min
+#undef max
+
+#ifndef N_THREADS
+#define N_THREADS 4
+#endif
+
 namespace _ {
 
     using namespace std;
 
     template<typename Container, typename Function>
     void each(const Container &container, Function function) {
-        for (const auto &item: container) {
+        for (const auto &item : container) {
             function(item);
         }
     };
@@ -32,7 +39,7 @@ namespace _ {
     template<typename Container, typename Function>
     Container filter(const Container &container, Function function) {
         Container result;
-        for (const auto &item: container) {
+        for (const auto &item : container) {
             if (function(item)) {
                 result.push_back(item);
             }
@@ -80,8 +87,8 @@ namespace _ {
     template<typename ContainerOfContainer>
     typename ContainerOfContainer::value_type flatten(ContainerOfContainer &containerOfContainer) {
         typename ContainerOfContainer::value_type result;
-        for (const auto &container: containerOfContainer) {
-            for (const auto &item: container) {
+        for (const auto &container : containerOfContainer) {
+            for (const auto &item : container) {
                 result.push_back(item);
             }
         }
@@ -93,10 +100,13 @@ namespace _ {
 
     namespace parallel {
 
-        static const int THREADS = 4;
+        static const int THREADS = N_THREADS;
 
         template<typename Container>
         void _peach(const Container &container, std::function<void(size_t tid, size_t idx)> function) {
+
+            std::cout << "underscore: parallel with " << N_THREADS << " threads." << std::endl;
+
             size_t size = container.size();
             std::thread **threads = new thread *[THREADS];
             for (int i = 0; i < THREADS; i++) {
@@ -147,7 +157,7 @@ namespace _ {
         template<typename GroupKey, typename Container, typename Function>
         std::map<GroupKey, Container> group(const Container &container, Function function) {
 
-            using result_type =std::map<GroupKey, Container>;
+            using result_type = std::map<GroupKey, Container>;
 
             //  parallel group data to many temp maps.
             std::vector<result_type> temp(THREADS);
@@ -167,7 +177,7 @@ namespace _ {
             //  get all the grouped keys, put them into a vector
             std::set<GroupKey> tempKeys;
             _::each(temp, [&tempKeys](const result_type &item) {
-                for (const auto &pair: item) {
+                for (const auto &pair : item) {
                     tempKeys.insert(pair.first);
                 }
             });
@@ -185,7 +195,7 @@ namespace _ {
                     auto &keySet = result[key];
                     if (itemp.find(key) != itemp.end()) {
                         auto &tset = const_cast<result_type &>(itemp)[key];
-                        for (const auto &item: tset) {
+                        for (const auto &item : tset) {
                             keySet.push_back(item);
                         }
                     }
