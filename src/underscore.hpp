@@ -33,7 +33,7 @@ namespace _ {
         for (const auto &item : container) {
             result.push_back(function(item));
         }
-        return result;
+        return std::move(result);
     };
 
     template<typename Container, typename Function>
@@ -44,7 +44,7 @@ namespace _ {
                 result.push_back(item);
             }
         }
-        return result;
+        return std::move(result);
     };
 
     template<typename GroupKey, typename Container, typename Function>
@@ -60,7 +60,7 @@ namespace _ {
                 result[key].push_back(item);
             }
         });
-        return result;
+        return std::move(result);
     };
 
     template<typename ResultType, typename Container, typename Function>
@@ -69,7 +69,7 @@ namespace _ {
         each(container, [&result, &function](const typename Container::value_type &item) {
             result = function(result, item);
         });
-        return result;
+        return std::move(result);
     };
 
     template<typename Container, typename Function>
@@ -92,7 +92,7 @@ namespace _ {
                 result.push_back(item);
             }
         }
-        return result;
+        return std::move(result);
     }
 }
 
@@ -137,7 +137,7 @@ namespace _ {
             _peach(container, [&result, &function, &container](size_t tid, size_t idx) {
                 result[idx] = function(container[idx]);
             });
-            return result;
+            return std::move(result);
         };
 
         template<typename Container, typename Function>
@@ -151,7 +151,7 @@ namespace _ {
                     _mutex.unlock();
                 }
             });
-            return result;
+            return std::move(result);
         };
 
         template<typename KeyType, typename ValueType>
@@ -237,7 +237,7 @@ namespace _ {
                     result[i] = (containerOfContainer[cid][i - start]);
                 }
             });
-            return result;
+            return std::move(result);
         }
     }
 
