@@ -8,6 +8,7 @@
 #include <map>
 #include <set>
 #include <thread>
+#include <algorithm>
 
 #undef min
 #undef max
