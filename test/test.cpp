@@ -116,7 +116,7 @@ namespace test {
                 {2, 3, 4, 5, 6, 7, 8, 9},
                 {3, 4, 5, 6, 7, 8, 9, 10}
         };
-        auto result = _::chain(a)
+        int result = _::chain(a)
                 .flatten<std::vector<int>>()
                 .reduce([](int memo, int item) -> int { return memo + item; }, 0)
                 .value();
@@ -253,7 +253,7 @@ namespace test {
                     {2, 3, 4, 5, 6, 7, 8, 9},
                     {3, 4, 5, 6, 7, 8, 9, 10}
             };
-            auto result = _::parallel::chain(a)
+            auto result = _::chain<_::Parallel>(a)
                     .flatten<std::vector<int>>()
                     .reduce([](int memo, int item) -> int { return memo + item; }, 0)
                     .value();

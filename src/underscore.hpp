@@ -82,54 +82,6 @@ namespace _ {
         }
         return std::move(result);
     }
-
-    template<typename Container>
-    class Wrapper {
-    public:
-        Wrapper(const Container &container) : container(container) {}
-
-        Container value() const {
-            return container;
-        }
-
-        template<typename Function>
-        void each(Function function) {
-            _::each(container, function);
-        }
-
-        template<typename ResultContainer, typename Function>
-        Wrapper<ResultContainer> map(Function function) {
-            return Wrapper<ResultContainer>(_::map < ResultContainer > (container, function));
-        };
-
-        template<typename Function>
-        Wrapper<Container> filter(Function function) {
-            return Wrapper<Container>(_::filter(container, function));
-        }
-
-        template<typename GroupKey, typename Function>
-        Wrapper<std::map<GroupKey, Container>> group(Function function) {
-            return Wrapper<std::map<GroupKey, Container>>(_::group(container, function));
-        };
-
-        template<typename ResultType, typename Function>
-        Wrapper<ResultType> reduce(Function function, ResultType init) {
-            return Wrapper<ResultType>(_::reduce(container, function, init));
-        };
-
-        template<typename ResultType>
-        Wrapper<ResultType> flatten() {
-            return Wrapper<ResultType>(_::flatten<Container>(container));
-        }
-
-    private:
-        Container container;
-    };
-
-    template<typename Container>
-    Wrapper<Container> chain(const Container &container) {
-        return Wrapper<Container>(container);
-    }
 }
 
 namespace _ {
@@ -275,57 +227,136 @@ namespace _ {
             });
             return std::move(result);
         }
-
-        template<typename Container>
-        class ParallelWrapper {
-        public:
-            ParallelWrapper(const Container &container) : container(container) {}
-
-            Container value() const {
-                return container;
-            }
-
-            template<typename Function>
-            void each(Function function) {
-                _::parallel::each(container, function);
-            }
-
-            template<typename ResultContainer, typename Function>
-            ParallelWrapper<ResultContainer> map(Function function) {
-                return ParallelWrapper<ResultContainer>(_::parallel::map<ResultContainer>(container, function));
-            };
-
-            template<typename Function>
-            ParallelWrapper<Container> filter(Function function) {
-                return ParallelWrapper<Container>(_::parallel::filter(container, function));
-            }
-
-            template<typename GroupKey, typename Function>
-            ParallelWrapper<std::map<GroupKey, Container>> group(Function function) {
-                return ParallelWrapper<std::map<GroupKey, Container>>(_::parallel::group(container, function));
-            };
-
-            template<typename ResultType, typename Function>
-            ParallelWrapper<ResultType> reduce(Function function, ResultType init) {
-                return ParallelWrapper<ResultType>(_::reduce(container, function, init));
-            };
-
-            template<typename ResultType>
-            ParallelWrapper<ResultType> flatten() {
-                return ParallelWrapper<ResultType>(_::parallel::flatten<Container>(container));
-            }
-
-        private:
-            Container container;
-        };
-
-        template<typename Container>
-        ParallelWrapper<Container> chain(const Container &container) {
-            return ParallelWrapper<Container>(container);
-        }
-
     }
 }
 
+namespace _ {
+
+    namespace strategy {
+
+        struct Serial {
+
+            template<typename Container, typename Function>
+            static void each(const Container &container, Function function) {
+                _::each(container, function);
+            };
+
+            template<typename ResultContainer, typename Container, typename Function>
+            static ResultContainer map(const Container &container, Function function) {
+                return _::map < ResultContainer > (container, function);
+            };
+
+            template<typename Container, typename Function>
+            static Container filter(const Container &container, Function function) {
+                return _::filter(container, function);
+            };
+
+            template<typename GroupKey, typename Container, typename Function>
+            static std::map<GroupKey, Container> group(const Container &container, Function function) {
+
+                return _::group(container, function);
+            };
+
+            template<typename ResultType, typename Container, typename Function>
+            static ResultType reduce(const Container &container, Function function, ResultType init) {
+                return _::reduce(container, function, init);
+            };
+
+            template<typename ContainerOfContainer>
+            static typename ContainerOfContainer::value_type flatten(ContainerOfContainer &containerOfContainer) {
+
+                return _::flatten(containerOfContainer);
+            }
+        };
+
+        struct Parallel {
+
+            template<typename Container, typename Function>
+            static void each(const Container &container, Function function) {
+                _::parallel::each(container, function);
+            };
+
+            template<typename ResultContainer, typename Container, typename Function>
+            static ResultContainer map(const Container &container, Function function) {
+                return _::parallel::map<ResultContainer>(container, function);
+            };
+
+            template<typename Container, typename Function>
+            static Container filter(const Container &container, Function function) {
+                return _::parallel::filter(container, function);
+            };
+
+            template<typename GroupKey, typename Container, typename Function>
+            static std::map<GroupKey, Container> group(const Container &container, Function function) {
+
+                return _::parallel::group(container, function);
+            };
+
+            template<typename ResultType, typename Container, typename Function>
+            static ResultType reduce(const Container &container, Function function, ResultType init) {
+                return _::reduce(container, function, init);
+            };
+
+            template<typename ContainerOfContainer>
+            static typename ContainerOfContainer::value_type flatten(ContainerOfContainer &containerOfContainer) {
+                return _::parallel::flatten(containerOfContainer);
+            }
+        };
+    }
+
+    using Serial = _::strategy::Serial;
+    using Parallel = _::strategy::Parallel;
+
+    template<typename Container, typename StrategyType>
+    class Wrapper {
+
+        using WrapperType = Wrapper<Container, StrategyType>;
+
+    public:
+        Wrapper(const Container &container) : container(container) {}
+
+        Container value() const {
+            return container;
+        }
+
+        template<typename Function>
+        void each(Function function) {
+            StrategyType::each(container, function);
+        }
+
+        template<typename ResultContainer, typename Function>
+        WrapperType map(Function function) {
+            return WrapperType(StrategyType::template map<ResultContainer>(container, function));
+        };
+
+        template<typename Function>
+        WrapperType filter(Function function) {
+            return WrapperType(StrategyType::filter(container, function));
+        }
+
+        template<typename GroupKey, typename Function>
+        WrapperType group(Function function) {
+            return WrapperType(StrategyType::group(container, function));
+        };
+
+        template<typename ResultType, typename Function>
+        Wrapper<ResultType, StrategyType> reduce(Function function, ResultType init) {
+            return Wrapper<ResultType, StrategyType>(StrategyType::reduce(container, function, init));
+        };
+
+        template<typename ResultType>
+        Wrapper<ResultType, StrategyType> flatten() {
+            return Wrapper<ResultType, StrategyType>(StrategyType::template flatten<Container>(container));
+        }
+
+    private:
+        Container container;
+    };
+
+    template<typename StrategyType=Serial, typename Container>
+    Wrapper<Container, StrategyType> chain(const Container &container) {
+        return Wrapper<Container, StrategyType>(container);
+    }
+}
 
 #endif //UNDERSCOREPP_UNDERSCORE_HPP
