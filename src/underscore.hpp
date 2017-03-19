@@ -72,18 +72,6 @@ namespace _ {
         return std::move(result);
     };
 
-    template<typename Container, typename Function>
-    typename Container::iterator findFirst(Container &container, Function function) {
-        for (auto itr = container.begin();
-             itr != container.end();
-             itr++) {
-            if (function(*itr)) {
-                return itr;
-            }
-        }
-        return container.end();
-    };
-
     template<typename ContainerOfContainer>
     typename ContainerOfContainer::value_type flatten(ContainerOfContainer &containerOfContainer) {
         typename ContainerOfContainer::value_type result;
@@ -93,6 +81,54 @@ namespace _ {
             }
         }
         return std::move(result);
+    }
+
+    template<typename Container>
+    class Wrapper {
+    public:
+        Wrapper(const Container &container) : container(container) {}
+
+        Container value() const {
+            return container;
+        }
+
+        template<typename Function>
+        void each(Function function) {
+            _::each(container, function);
+        }
+
+        template<typename ResultContainer, typename Function>
+        Wrapper<ResultContainer> map(Function function) {
+            return Wrapper<ResultContainer>(_::map < ResultContainer > (container, function));
+        };
+
+        template<typename Function>
+        Wrapper<Container> filter(Function function) {
+            return Wrapper<Container>(_::filter(container, function));
+        }
+
+        template<typename GroupKey, typename Function>
+        Wrapper<std::map<GroupKey, Container>> group(Function function) {
+            return Wrapper<std::map<GroupKey, Container>>(_::group(container, function));
+        };
+
+        template<typename ResultType, typename Function>
+        Wrapper<ResultType> reduce(Function function, ResultType init) {
+            return Wrapper<ResultType>(_::reduce(container, function, init));
+        };
+
+        template<typename ResultType>
+        Wrapper<ResultType> flatten() {
+            return Wrapper<ResultType>(_::flatten<Container>(container));
+        }
+
+    private:
+        Container container;
+    };
+
+    template<typename Container>
+    Wrapper<Container> chain(const Container &container) {
+        return Wrapper<Container>(container);
     }
 }
 
@@ -239,8 +275,56 @@ namespace _ {
             });
             return std::move(result);
         }
-    }
 
+        template<typename Container>
+        class ParallelWrapper {
+        public:
+            ParallelWrapper(const Container &container) : container(container) {}
+
+            Container value() const {
+                return container;
+            }
+
+            template<typename Function>
+            void each(Function function) {
+                _::parallel::each(container, function);
+            }
+
+            template<typename ResultContainer, typename Function>
+            ParallelWrapper<ResultContainer> map(Function function) {
+                return ParallelWrapper<ResultContainer>(_::parallel::map<ResultContainer>(container, function));
+            };
+
+            template<typename Function>
+            ParallelWrapper<Container> filter(Function function) {
+                return ParallelWrapper<Container>(_::parallel::filter(container, function));
+            }
+
+            template<typename GroupKey, typename Function>
+            ParallelWrapper<std::map<GroupKey, Container>> group(Function function) {
+                return ParallelWrapper<std::map<GroupKey, Container>>(_::parallel::group(container, function));
+            };
+
+            template<typename ResultType, typename Function>
+            ParallelWrapper<ResultType> reduce(Function function, ResultType init) {
+                return ParallelWrapper<ResultType>(_::reduce(container, function, init));
+            };
+
+            template<typename ResultType>
+            ParallelWrapper<ResultType> flatten() {
+                return ParallelWrapper<ResultType>(_::parallel::flatten<Container>(container));
+            }
+
+        private:
+            Container container;
+        };
+
+        template<typename Container>
+        ParallelWrapper<Container> chain(const Container &container) {
+            return ParallelWrapper<Container>(container);
+        }
+
+    }
 }
 
 

@@ -88,20 +88,6 @@ namespace test {
         std::cout << "OK." << std::endl;
     }
 
-    void test_find_first() {
-
-        std::cout << "Testing find first..." << std::endl;
-
-        std::vector<int> a{1, 2, 3, 4, 5, 6, 7, 8};
-        auto result = _::findFirst(a, [](const int &item) {
-            return item == 5;
-        });
-
-        std::cout << *result << std::endl;
-
-        std::cout << "OK." << std::endl;
-    }
-
     void test_flatten() {
 
         std::cout << "Testing flatten..." << std::endl;
@@ -121,6 +107,24 @@ namespace test {
         std::cout << "OK." << std::endl;
     }
 
+    void test_chain() {
+
+        std::cout << "Testing chain..." << std::endl;
+
+        std::vector<std::vector<int>> a{
+                {1, 2, 3, 4, 5, 6, 7, 8},
+                {2, 3, 4, 5, 6, 7, 8, 9},
+                {3, 4, 5, 6, 7, 8, 9, 10}
+        };
+        auto result = _::chain(a)
+                .flatten<std::vector<int>>()
+                .reduce([](int memo, int item) -> int { return memo + item; }, 0)
+                .value();
+        std::cout << result << std::endl;
+
+        std::cout << "OK." << std::endl;
+    }
+
     void test_underscore() {
 
         test_each();
@@ -128,8 +132,8 @@ namespace test {
         test_filter();
         test_group();
         test_reduce();
-        test_find_first();
         test_flatten();
+        test_chain();
     }
 }
 
@@ -240,12 +244,31 @@ namespace test {
             std::cout << "OK." << std::endl;
         }
 
+        void test_chain() {
+
+            std::cout << "Testing parallel chain..." << std::endl;
+
+            std::vector<std::vector<int>> a{
+                    {1, 2, 3, 4, 5, 6, 7, 8},
+                    {2, 3, 4, 5, 6, 7, 8, 9},
+                    {3, 4, 5, 6, 7, 8, 9, 10}
+            };
+            auto result = _::parallel::chain(a)
+                    .flatten<std::vector<int>>()
+                    .reduce([](int memo, int item) -> int { return memo + item; }, 0)
+                    .value();
+            std::cout << result << std::endl;
+
+            std::cout << "OK." << std::endl;
+        }
+
         void test_parallel_underscore() {
             test_each();
             test_map();
             test_filter();
             test_group();
             test_flatten();
+            test_chain();
         }
 
     }
