@@ -9,7 +9,6 @@
 * filter
 * group
 * reduce
-* findFirst
 * flatten
 
 ### Paralleled
@@ -19,6 +18,10 @@
 * filter
 * group
 * flatten
+
+### Chain
+
+* chain (with serial and parallel strategy)
 
 ## Example
 
@@ -64,7 +67,20 @@ int main() {
         assert(a4[i] == a[i] * 2);
     }
     std::cout << "OK..." << std::endl;
-
+    
+    // ---------- test parallel chain --------------
+    std::vector<std::vector<int>> a{
+                    {1, 2, 3, 4, 5, 6, 7, 8},
+                    {2, 3, 4, 5, 6, 7, 8, 9},
+                    {3, 4, 5, 6, 7, 8, 9, 10}
+                };
+    auto result = _::chain<_::Parallel>(a)
+            .flatten<std::vector<int>>()
+            .reduce([](int memo, int item) -> int { return memo + item; }, 0)
+            .value();
+    std::cout << result << std::endl;
+    std::cout << "OK." << std::endl;
+    
     return 0;
 }
 

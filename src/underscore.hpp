@@ -319,34 +319,34 @@ namespace _ {
             return container;
         }
 
-        template<typename Function>
+        template<typename Strategy=StrategyType, typename Function>
         void each(Function function) {
-            StrategyType::each(container, function);
+            Strategy::each(container, function);
         }
 
-        template<typename ResultContainer, typename Function>
+        template<typename ResultContainer, typename Strategy=StrategyType, typename Function>
         WrapperType map(Function function) {
-            return WrapperType(StrategyType::template map<ResultContainer>(container, function));
+            return WrapperType(Strategy::template map<ResultContainer>(container, function));
         };
 
-        template<typename Function>
+        template<typename Strategy=StrategyType, typename Function>
         WrapperType filter(Function function) {
-            return WrapperType(StrategyType::filter(container, function));
+            return WrapperType(Strategy::filter(container, function));
         }
 
-        template<typename GroupKey, typename Function>
+        template<typename GroupKey, typename Strategy=StrategyType, typename Function>
         WrapperType group(Function function) {
-            return WrapperType(StrategyType::group(container, function));
+            return WrapperType(Strategy::group(container, function));
         };
 
-        template<typename ResultType, typename Function>
+        template<typename ResultType, typename Strategy=StrategyType, typename Function>
         Wrapper<ResultType, StrategyType> reduce(Function function, ResultType init) {
-            return Wrapper<ResultType, StrategyType>(StrategyType::reduce(container, function, init));
+            return Wrapper<ResultType, StrategyType>(Strategy::reduce(container, function, init));
         };
 
-        template<typename ResultType>
+        template<typename ResultType, typename Strategy=StrategyType>
         Wrapper<ResultType, StrategyType> flatten() {
-            return Wrapper<ResultType, StrategyType>(StrategyType::template flatten<Container>(container));
+            return Wrapper<ResultType, StrategyType>(Strategy::template flatten<Container>(container));
         }
 
     private:

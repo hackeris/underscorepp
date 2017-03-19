@@ -118,7 +118,7 @@ namespace test {
         };
         int result = _::chain(a)
                 .flatten<std::vector<int>>()
-                .reduce([](int memo, int item) -> int { return memo + item; }, 0)
+                .reduce([](const int &memo, const int &item) -> int { return memo + item; }, 0)
                 .value();
         std::cout << result << std::endl;
 
