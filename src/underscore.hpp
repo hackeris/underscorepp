@@ -94,39 +94,97 @@ namespace _ {
         static const int THREADS = N_THREADS;
 
         template<typename Container>
-        void _peach(const Container &container, std::function<void(size_t tid, size_t idx)> function) {
+        struct _peach_selector {
+            static void each(const Container &container,
+                             std::function<void(size_t tid, size_t idx,
+                                                const typename Container::value_type &elem)> function) {
+#ifdef _DEBUG
+                std::cout << "underscore: parallel with " << N_THREADS << " threads." << std::endl;
+#endif
 
-            std::cout << "underscore: parallel with " << N_THREADS << " threads." << std::endl;
+                size_t size = container.size();
+                std::thread **threads = new thread *[THREADS];
+                for (size_t i = 0; i < THREADS; i++) {
+                    threads[i] = new thread([&function, &container, size, i]() {
+                        auto start = i * size / THREADS;
+                        auto end = std::min((i + 1) * size / THREADS, size);
+                        for (auto j = start; j < end; j++) {
+                            function(i, j, container[j]);
+                        }
+                    });
+                }
+                for (int i = 0; i < THREADS; i++) {
+                    threads[i]->join();
+                }
+                delete[] threads;
+            }
+        };
 
-            size_t size = container.size();
-            std::thread **threads = new thread *[THREADS];
-            for (int i = 0; i < THREADS; i++) {
-                threads[i] = new thread([&function, &container, size, i]() {
-                    auto start = i * size / THREADS;
-                    auto end = std::min((i + 1) * size / THREADS, size);
-                    for (auto j = start; j < end; j++) {
-                        function(i, j);
-                    }
-                });
+        template<typename K, typename V>
+        struct _peach_selector<std::map<K, V>> {
+
+            using Container = std::map<K, V>;
+
+            static void each(const Container &container,
+                             std::function<void(size_t tid, size_t idx,
+                                                const typename Container::value_type &elem)> function) {
+#ifdef _DEBUG
+                std::cout << "underscore: parallel with " << N_THREADS << " threads." << std::endl;
+#endif
+                size_t size = container.size();
+                size_t idx = 0;
+                auto itr = container.begin();
+                auto end = container.end();
+
+                std::mutex _mutex;
+
+                std::thread **threads = new thread *[THREADS];
+                for (size_t i = 0; i < THREADS; i++) {
+                    threads[i] = new thread([&function, &container, &idx, i, &_mutex, &itr, &end]() {
+
+                        while (true) {
+                            //  get itr first
+                            _mutex.lock();
+                            if (itr == end) {
+                                _mutex.unlock();
+                                break;
+                            } else {
+                                itr++;
+                                idx++;
+                                auto local_itr = itr;
+                                _mutex.unlock();
+                                function(i, idx, *local_itr);
+                            }
+                        }
+                    });
+                }
+                for (int i = 0; i < THREADS; i++) {
+                    threads[i]->join();
+                }
+                delete[] threads;
             }
-            for (int i = 0; i < THREADS; i++) {
-                threads[i]->join();
-            }
-            delete[] threads;
+        };
+
+        template<typename Container>
+        void _peach(const Container &container,
+                    std::function<void(size_t tid, size_t idx, const typename Container::value_type &elem)> function) {
+            _peach_selector<Container>::each(container, function);
         };
 
         template<typename Container, typename Function>
         void each(const Container &container, Function function) {
-            _peach<Container>(container, [&container, &function](size_t i, size_t j) {
-                function(container[j]);
-            });
+            _peach<Container>(container,
+                              [&container, &function](size_t i, size_t j, const typename Container::value_type &elem) {
+                                  function(elem);
+                              });
         };
 
         template<typename ResultContainer, typename Container, typename Function>
         ResultContainer map(const Container &container, Function function) {
             ResultContainer result(container.size());
-            _peach(container, [&result, &function, &container](size_t tid, size_t idx) {
-                result[idx] = function(container[idx]);
+            _peach(container, [&result, &function, &container](size_t tid, size_t idx,
+                                                               const typename Container::value_type &elem) {
+                result[idx] = function(elem);
             });
             return std::move(result);
         };
@@ -135,10 +193,11 @@ namespace _ {
         Container filter(const Container &container, Function function) {
             Container result;
             std::mutex _mutex;
-            _peach(container, [&result, &_mutex, &container, &function](size_t tid, size_t idx) {
-                if (function(container[idx])) {
+            _peach(container, [&result, &_mutex, &container, &function](size_t tid, size_t idx,
+                                                                        const typename Container::value_type &elem) {
+                if (function(elem)) {
                     _mutex.lock();
-                    result.push_back(container[idx]);
+                    result.push_back(elem);
                     _mutex.unlock();
                 }
             });
@@ -189,8 +248,8 @@ namespace _ {
 
             //  parallel group data to many temp maps.
             std::vector<result_type> temp(THREADS);
-            _peach(container, [&container, &temp, &function](size_t tid, size_t idx) {
-                const auto &item = container[idx];
+            _peach(container, [&temp, &function](size_t tid, size_t idx, const typename Container::value_type &elem) {
+                const auto &item = elem;
                 auto &ttemp = temp[tid];
                 GroupKey key = function(item);
                 if (ttemp.find(key) == ttemp.end()) {
@@ -219,8 +278,7 @@ namespace _ {
 
             //  perform parallel flatten
             typename ContainerOfContainer::value_type result(total_size);
-            _peach(ranges, [&containerOfContainer, &ranges, &result](size_t tid, size_t idx) {
-                range_type range = ranges[idx];
+            _peach(ranges, [&containerOfContainer, &ranges, &result](size_t tid, size_t idx, const range_type &range) {
                 size_t cid = std::get<0>(range);
                 size_t start = std::get<1>(range);
                 size_t end = std::get<2>(range);

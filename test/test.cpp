@@ -262,6 +262,26 @@ namespace test {
             std::cout << "OK." << std::endl;
         }
 
+        void test_parallel_each_for_map() {
+            std::cout << "Testing parallel each for map..." << std::endl;
+
+            std::map<int, int> mp;
+            const int n = 10000000;
+            for (int i = 0; i < n; i++) {
+                mp[i] = i;
+            }
+            std::vector<int> v(n);
+            _::parallel::each(mp, [&v](const std::pair<int, int> &p) {
+                v[p.first] = p.second;
+            });
+
+            for (int i = 0; i < n; i++) {
+                assert(v[i] == i);
+            }
+
+            std::cout << "OK." << std::endl;
+        }
+
         void test_parallel_underscore() {
             test_each();
             test_map();
@@ -269,6 +289,7 @@ namespace test {
             test_group();
             test_flatten();
             test_chain();
+            test_parallel_each_for_map();
         }
 
     }
