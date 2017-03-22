@@ -98,36 +98,7 @@ namespace _ {
             static void each(const Container &container,
                              std::function<void(size_t tid, size_t idx,
                                                 const typename Container::value_type &elem)> function) {
-#ifdef _DEBUG
-                std::cout << "underscore: parallel with " << N_THREADS << " threads." << std::endl;
-#endif
 
-                size_t size = container.size();
-                std::thread **threads = new thread *[THREADS];
-                for (size_t i = 0; i < THREADS; i++) {
-                    threads[i] = new thread([&function, &container, size, i]() {
-                        auto start = i * size / THREADS;
-                        auto end = std::min((i + 1) * size / THREADS, size);
-                        for (auto j = start; j < end; j++) {
-                            function(i, j, container[j]);
-                        }
-                    });
-                }
-                for (int i = 0; i < THREADS; i++) {
-                    threads[i]->join();
-                }
-                delete[] threads;
-            }
-        };
-
-        template<typename K, typename V>
-        struct _peach_selector<std::map<K, V>> {
-
-            using Container = std::map<K, V>;
-
-            static void each(const Container &container,
-                             std::function<void(size_t tid, size_t idx,
-                                                const typename Container::value_type &elem)> function) {
 #ifdef _DEBUG
                 std::cout << "underscore: parallel with " << N_THREADS << " threads." << std::endl;
 #endif
@@ -155,6 +126,37 @@ namespace _ {
                                 _mutex.unlock();
                                 function(i, local_idx, *local_itr);
                             }
+                        }
+                    });
+                }
+                for (int i = 0; i < THREADS; i++) {
+                    threads[i]->join();
+                    delete threads[i];
+                }
+                delete[] threads;
+            }
+        };
+
+        template<typename ValueType>
+        struct _peach_selector<std::vector<ValueType>> {
+
+            using Container = std::vector<ValueType>;
+
+            static void each(const Container &container,
+                             std::function<void(size_t tid, size_t idx,
+                                                const typename Container::value_type &elem)> function) {
+#ifdef _DEBUG
+                std::cout << "underscore: parallel with " << N_THREADS << " threads." << std::endl;
+#endif
+
+                size_t size = container.size();
+                std::thread **threads = new thread *[THREADS];
+                for (size_t i = 0; i < THREADS; i++) {
+                    threads[i] = new thread([&function, &container, size, i]() {
+                        auto start = i * size / THREADS;
+                        auto end = std::min((i + 1) * size / THREADS, size);
+                        for (auto j = start; j < end; j++) {
+                            function(i, j, container[j]);
                         }
                     });
                 }
