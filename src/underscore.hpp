@@ -131,7 +131,6 @@ namespace _ {
 #ifdef _DEBUG
                 std::cout << "underscore: parallel with " << N_THREADS << " threads." << std::endl;
 #endif
-                size_t size = container.size();
                 size_t idx = 0;
                 auto itr = container.begin();
                 auto end = container.end();
@@ -140,7 +139,7 @@ namespace _ {
 
                 std::thread **threads = new thread *[THREADS];
                 for (size_t i = 0; i < THREADS; i++) {
-                    threads[i] = new thread([&function, &container, &idx, i, &_mutex, &itr, &end]() {
+                    threads[i] = new thread([&function, &idx, i, &_mutex, &itr, &end]() {
 
                         while (true) {
                             //  get itr first
@@ -149,17 +148,19 @@ namespace _ {
                                 _mutex.unlock();
                                 break;
                             } else {
+                                auto local_itr = itr;
+                                auto local_idx = idx;
                                 itr++;
                                 idx++;
-                                auto local_itr = itr;
                                 _mutex.unlock();
-                                function(i, idx, *local_itr);
+                                function(i, local_idx, *local_itr);
                             }
                         }
                     });
                 }
                 for (int i = 0; i < THREADS; i++) {
                     threads[i]->join();
+                    delete threads[i];
                 }
                 delete[] threads;
             }
@@ -174,7 +175,7 @@ namespace _ {
         template<typename Container, typename Function>
         void each(const Container &container, Function function) {
             _peach<Container>(container,
-                              [&container, &function](size_t i, size_t j, const typename Container::value_type &elem) {
+                              [&function](size_t i, size_t j, const typename Container::value_type &elem) {
                                   function(elem);
                               });
         };
