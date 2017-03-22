@@ -6,3 +6,4 @@ include_directories(src)
 
 set(SOURCE_FILES test/test.cpp src/underscore.hpp)
 add_executable(underscorepp ${SOURCE_FILES})
+target_link_libraries(underscorepp pthread)

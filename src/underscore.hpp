@@ -8,6 +8,8 @@
 #include <map>
 #include <set>
 #include <thread>
+#include <mutex>
+#include <atomic>
 #include <algorithm>
 
 #undef min
