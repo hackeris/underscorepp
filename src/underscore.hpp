@@ -15,10 +15,6 @@
 #undef min
 #undef max
 
-#ifndef N_THREADS
-#define N_THREADS 4
-#endif
-
 namespace _ {
 
     using namespace std;
@@ -91,7 +87,9 @@ namespace _ {
 
     namespace parallel {
 
-        static const int THREADS = N_THREADS;
+        inline unsigned int get_concurrency() {
+            return std::thread::hardware_concurrency();
+        }
 
         class atomic_spin_lock {
         private:
@@ -120,7 +118,7 @@ namespace _ {
             static void each(const Container &container,
                              std::function<void(size_t tid, size_t idx,
                                                 const typename Container::value_type &elem)> function) {
-
+                const int THREADS = get_concurrency();
 #ifdef _DEBUG
                 std::cout << "underscore: parallel with " << N_THREADS << " threads." << std::endl;
 #endif
@@ -167,6 +165,7 @@ namespace _ {
             static void each(const Container &container,
                              std::function<void(size_t tid, size_t idx,
                                                 const typename Container::value_type &elem)> function) {
+                const int THREADS = get_concurrency();
 #ifdef _DEBUG
                 std::cout << "underscore: parallel with " << N_THREADS << " threads." << std::endl;
 #endif
@@ -174,7 +173,7 @@ namespace _ {
                 size_t size = container.size();
                 std::thread **threads = new thread *[THREADS];
                 for (size_t i = 0; i < THREADS; i++) {
-                    threads[i] = new thread([&function, &container, size, i]() {
+                    threads[i] = new thread([&function, &container, size, i, THREADS]() {
                         auto start = i * size / THREADS;
                         auto end = std::min((i + 1) * size / THREADS, size);
                         for (auto j = start; j < end; j++) {
@@ -270,9 +269,10 @@ namespace _ {
         std::map<GroupKey, Container> group(const Container &container, Function function) {
 
             using result_type = std::map<GroupKey, Container>;
+            const int THREADS = get_concurrency();
 
             //  parallel group data to many temp maps.
-            std::vector<result_type> temp(THREADS);
+            std::vector<result_type> temp((size_t) THREADS);
             _peach(container, [&temp, &function](size_t tid, size_t idx, const typename Container::value_type &elem) {
                 const auto &item = elem;
                 auto &ttemp = temp[tid];
