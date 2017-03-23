@@ -93,6 +93,28 @@ namespace _ {
 
         static const int THREADS = N_THREADS;
 
+        class atomic_spin_lock {
+        private:
+            enum STATUS {
+                UNLOCKED = 0,
+                LOCKED = 1
+            };
+        public:
+            void lock() {
+                int desired = UNLOCKED;
+                while (!_lock.compare_exchange_strong(desired, LOCKED)) {
+                    desired = UNLOCKED;
+                }
+            }
+
+            void unlock() {
+                _lock.store(UNLOCKED);
+            }
+
+        private:
+            std::atomic<int> _lock{0};
+        };
+
         template<typename Container>
         struct _peach_selector {
             static void each(const Container &container,
@@ -106,24 +128,24 @@ namespace _ {
                 auto itr = container.begin();
                 auto end = container.end();
 
-                std::mutex _mutex;
+                atomic_spin_lock _lock;
 
                 std::thread **threads = new thread *[THREADS];
                 for (size_t i = 0; i < THREADS; i++) {
-                    threads[i] = new thread([&function, &idx, i, &_mutex, &itr, &end]() {
+                    threads[i] = new thread([&function, &idx, i, &_lock, &itr, &end]() {
 
                         while (true) {
                             //  get itr first
-                            _mutex.lock();
+                            _lock.lock();
                             if (itr == end) {
-                                _mutex.unlock();
+                                _lock.unlock();
                                 break;
                             } else {
                                 auto local_itr = itr;
                                 auto local_idx = idx;
                                 itr++;
                                 idx++;
-                                _mutex.unlock();
+                                _lock.unlock();
                                 function(i, local_idx, *local_itr);
                             }
                         }
